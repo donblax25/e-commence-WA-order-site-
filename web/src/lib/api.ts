@@ -68,6 +68,6 @@ export async function createOrder(payload: {
   return (await res.json()) as { orderCode: string; whatsappUrl: string };
 }
 
-export function formatNgn(naira: number) {
-  return `NGN ${naira.toFixed(2)}`;
+export function formatNgn(naira?: number | null) {
+  return `NGN ${(naira ?? 0).toFixed(2)}`;
 }
