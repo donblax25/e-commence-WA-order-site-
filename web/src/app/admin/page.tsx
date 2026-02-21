@@ -49,6 +49,7 @@ export default function AdminPage() {
   const [productSlug, setProductSlug] = useState("");
   const [productPrice, setProductPrice] = useState("0");
   const [productStock, setProductStock] = useState("0");
+  const [productCategoryId, setProductCategoryId] = useState<string | null>(null);
   const [productImageDataUrl, setProductImageDataUrl] = useState<string | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
@@ -207,6 +208,7 @@ export default function AdminPage() {
       body: JSON.stringify({
         name: productName,
         slug: productSlug,
+        categoryId: productCategoryId ?? undefined,
         priceNaira: Number(productPrice),
         stockQty: Number(productStock),
         imageUrl: productImageDataUrl ?? undefined,
@@ -227,6 +229,7 @@ export default function AdminPage() {
     setProductSlug("");
     setProductPrice("0");
     setProductStock("0");
+    setProductCategoryId(null);
     setProductImageDataUrl(null);
     await fetchProducts();
   }
@@ -277,6 +280,12 @@ export default function AdminPage() {
             <p className="font-medium">Add Product</p>
             <input placeholder="Product name (e.g. Wireless Earbuds)" value={productName} onChange={(e) => setProductName(e.target.value)} className="w-full rounded border px-3 py-2" />
             <input placeholder="Slug (e.g. wireless-earbuds)" value={productSlug} onChange={(e) => setProductSlug(e.target.value)} className="w-full rounded border px-3 py-2" />
+            <select value={productCategoryId ?? ""} onChange={(e) => setProductCategoryId(e.target.value || null)} className="w-full rounded border px-3 py-2">
+              <option value="">Select Category (Optional)</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
             <div className="grid grid-cols-2 gap-2">
               <input placeholder="Price in Naria (e.g. 5000)" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} className="w-full rounded border px-3 py-2" />
               <input placeholder="Stock quantity (e.g. 40)" value={productStock} onChange={(e) => setProductStock(e.target.value)} className="w-full rounded border px-3 py-2" />
@@ -318,7 +327,7 @@ export default function AdminPage() {
                   <div key={p.id} className="flex items-center justify-between bg-amber-50 p-3 rounded text-sm border border-amber-200">
                     <div className="flex-1">
                       <p className="font-medium">{p.name}</p>
-                      <p className="text-xs text-slate-500">NGN {p.priceNaira.toFixed(2)} • Stock: {p.stockQty}</p>
+                      <p className="text-xs text-slate-500">NGN {(p.priceNaira ?? 0).toFixed(2)} {p.categoryName && `• ${p.categoryName}`} • Stock: {p.stockQty}</p>
                     </div>
                     <button onClick={() => deleteProduct(p.id)} className="ml-2 rounded bg-red-500 px-3 py-1 text-white text-xs hover:bg-red-600">Delete</button>
                   </div>
@@ -331,7 +340,7 @@ export default function AdminPage() {
             {orders.map((o) => (
               <div key={o.orderCode} className="rounded border border-clay bg-white p-3">
                 <p className="font-medium">{o.orderCode}</p>
-                <p className="text-sm text-slate-600">{o.status} | {o.customerPhone ?? "No phone"} | NGN {o.totalNaira.toFixed(2)}</p>
+                <p className="text-sm text-slate-600">{o.status} | {o.customerPhone ?? "No phone"} | NGN {(o.totalNaira ?? 0).toFixed(2)}</p>
                 <div className="mt-2 flex gap-2">
                   {(["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"] as Status[]).map((s) => (
                     <button key={s} onClick={() => updateOrderStatus(o.orderCode, s)} className="rounded border px-2 py-1 text-xs">
