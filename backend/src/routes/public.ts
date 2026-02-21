@@ -23,9 +23,10 @@ const productQuerySchema = z.object({
 
 publicRouter.get("/categories", async (_req, res, next) => {
   try {
-    const { rows } = await withTx((client) =>
+    const queryResult = await withTx((client) =>
       client.query("select id, name, slug, parent_id as \"parentId\" from categories order by name asc")
-    );
+    ) as { rows: unknown[] };
+    const { rows } = queryResult;
     return res.json(rows);
   } catch (error) {
     next(error);
@@ -85,7 +86,8 @@ publicRouter.get("/products", async (req, res, next) => {
       order by ${sortSql}
     `;
 
-    const { rows } = await withTx((client) => client.query(sql, values));
+    const queryResult = await withTx((client) => client.query(sql, values)) as { rows: unknown[] };
+    const { rows } = queryResult;
     return res.json(rows);
   } catch (error) {
     next(error);
@@ -102,7 +104,7 @@ publicRouter.get("/products/:slug", async (req, res, next) => {
           p.name,
           p.slug,
           p.description,
-          p.price_kobo as "priceKobo",
+          p.price_kobo as "priceNaira",
           p.stock_qty as "stockQty",
           p.is_featured as "isFeatured",
           c.name as "categoryName",
@@ -121,7 +123,7 @@ publicRouter.get("/products/:slug", async (req, res, next) => {
         limit 1`,
         [slug]
       )
-    );
+    ) as { rowCount: number; rows: unknown[] };
 
     if (result.rowCount === 0) {
       throw new HttpError(404, "Product not found");

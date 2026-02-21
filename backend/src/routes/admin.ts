@@ -39,15 +39,15 @@ export const adminRouter = Router();
 adminRouter.post("/login", async (req, res, next) => {
   try {
     const input = loginSchema.parse(req.body);
-    const query = await withTx((client) =>
+    const queryResult = await withTx((client) =>
       client.query("select id, email, password_hash from admins where email = $1", [input.email])
-    );
+    ) as { rowCount: number; rows: unknown[] };
 
-    if (query.rowCount === 0) {
+    if (queryResult.rowCount === 0) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const admin = query.rows[0] as { id: string; email: string; password_hash: string };
+    const admin = queryResult.rows[0] as { id: string; email: string; password_hash: string };
     const valid = await bcrypt.compare(input.password, admin.password_hash);
     if (!valid) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -64,9 +64,9 @@ adminRouter.use(requireAdmin);
 
 adminRouter.get("/orders", async (req, res, next) => {
   try {
-    const query = orderQuerySchema.parse(req.query);
-    const status = query.status?.trim();
-    const q = query.q?.trim();
+    const queryParsed = orderQuerySchema.parse(req.query);
+    const status = queryParsed.status?.trim();
+    const q = queryParsed.q?.trim();
 
     const where: string[] = [];
     const values: unknown[] = [];
@@ -81,14 +81,15 @@ adminRouter.get("/orders", async (req, res, next) => {
 
     const sql = `
       select o.id, o.order_code as "orderCode", o.status, o.customer_name as "customerName",
-      o.customer_phone as "customerPhone", o.total_kobo as "totalKobo", o.created_at as "createdAt"
+      o.customer_phone as "customerPhone", o.total_kobo as "totalNaira", o.created_at as "createdAt"
       from orders o
       ${where.length > 0 ? `where ${where.join(" and ")}` : ""}
       order by o.created_at desc
       limit 200
     `;
 
-    const { rows } = await withTx((client) => client.query(sql, values));
+    const queryResult = await withTx((client) => client.query(sql, values));
+    const { rows } = queryResult as { rows: unknown[] };
     return res.json(rows);
   } catch (error) {
     next(error);
@@ -109,8 +110,8 @@ adminRouter.get("/orders/:orderCode", async (req, res, next) => {
           o.customer_phone as "customerPhone",
           o.customer_note as "customerNote",
           o.delivery_address as "deliveryAddress",
-          o.subtotal_kobo as "subtotalKobo",
-          o.total_kobo as "totalKobo",
+          o.subtotal_kobo as "subtotalNaira",
+          o.total_kobo as "totalNaira",
           o.created_at as "createdAt"
          from orders o
          where o.order_code = $1
@@ -126,8 +127,8 @@ adminRouter.get("/orders/:orderCode", async (req, res, next) => {
         `select
           oi.product_name_snapshot as name,
           oi.qty,
-          oi.unit_price_kobo_snapshot as "unitPriceKobo",
-          oi.line_total_kobo as "lineTotalKobo"
+          oi.unit_price_kobo_snapshot as "unitPriceNaira",
+          oi.line_total_kobo as "lineTotalNaira"
          from order_items oi
          where oi.order_id = $1`,
         [order.rows[0].id]
@@ -160,14 +161,14 @@ adminRouter.get("/orders/:orderCode", async (req, res, next) => {
 
 adminRouter.get("/products", async (_req, res, next) => {
   try {
-    const { rows } = await withTx((client) =>
+    const queryResult = await withTx((client) =>
       client.query(
         `select
           p.id,
           p.name,
           p.slug,
           p.description,
-          p.price_kobo as "priceKobo",
+          p.price_kobo as "priceNaira",
           p.stock_qty as "stockQty",
           p.is_active as "isActive",
           p.is_featured as "isFeatured",
@@ -186,7 +187,8 @@ adminRouter.get("/products", async (_req, res, next) => {
         left join categories c on c.id = p.category_id
         order by p.created_at desc`
       )
-    );
+    ) as { rows: unknown[] };
+    const { rows } = queryResult;
     return res.json(rows);
   } catch (error) {
     next(error);
@@ -195,9 +197,10 @@ adminRouter.get("/products", async (_req, res, next) => {
 
 adminRouter.get("/categories", async (_req, res, next) => {
   try {
-    const { rows } = await withTx((client) =>
+    const queryResult = await withTx((client) =>
       client.query("select id, name, slug, parent_id as \"parentId\" from categories order by name asc")
-    );
+    ) as { rows: unknown[] };
+    const { rows } = queryResult;
     return res.json(rows);
   } catch (error) {
     next(error);
@@ -213,12 +216,13 @@ adminRouter.post("/categories", async (req, res, next) => {
     });
     const input = schema.parse(req.body);
 
-    const { rows } = await withTx((client) =>
+    const queryResult = await withTx((client) =>
       client.query(
         "insert into categories (id, name, slug, parent_id) values (gen_random_uuid(), $1, $2, $3) returning id, name, slug, parent_id as \"parentId\"",
         [input.name, input.slug, input.parentId ?? null]
       )
     );
+    const { rows } = queryResult as { rows: unknown[] };
     return res.status(201).json(rows[0]);
   } catch (error) {
     next(error);
@@ -230,7 +234,7 @@ adminRouter.delete("/categories/:id", async (req, res, next) => {
     const id = req.params.id;
     const result = await withTx((client) =>
       client.query("delete from categories where id = $1 returning id", [id])
-    );
+    ) as { rowCount: number };
     if (result.rowCount === 0) {
       throw new HttpError(404, "Category not found");
     }
@@ -246,7 +250,7 @@ adminRouter.patch("/orders/:orderCode/status", async (req, res, next) => {
     const orderCode = req.params.orderCode;
 
     await withTx(async (client) => {
-      const current = await client.query("select id, status from orders where order_code = $1", [orderCode]);
+      const current = await client.query("select id, status from orders where order_code = $1", [orderCode]) as { rowCount: number; rows: unknown[] };
       if (current.rowCount === 0) {
         throw new HttpError(404, "Order not found");
       }
@@ -286,7 +290,7 @@ adminRouter.post("/products", async (req, res, next) => {
           input.name,
           input.slug,
           input.description ?? null,
-          input.priceKobo,
+          input.priceNaira,
           input.stockQty,
           input.isActive,
           input.isFeatured
@@ -324,13 +328,13 @@ adminRouter.patch("/products/:id", async (req, res, next) => {
           input.name,
           input.slug,
           input.description ?? null,
-          input.priceKobo,
+          input.priceNaira,
           input.stockQty,
           input.isActive,
           input.isFeatured,
           id
         ]
-      );
+      ) as { rowCount: number };
 
       if (result.rowCount === 0) {
         throw new HttpError(404, "Product not found");

@@ -20,9 +20,9 @@ async function seed() {
      on conflict (slug) do nothing`
   );
 
-  const category = await pool.query("select id from categories where slug = 'electronics' limit 1");
-  if (category.rowCount > 0) {
-    const categoryId = category.rows[0].id as string;
+  const category = await pool.query("select id from categories where slug = 'electronics' limit 1") as { rowCount: number | null; rows: unknown[] };
+  if ((category.rowCount ?? 0) > 0) {
+    const categoryId = (category.rows[0] as { id: string }).id;
     await pool.query(
       `insert into products (
         id, category_id, name, slug, description, price_kobo, stock_qty, is_active, is_featured
