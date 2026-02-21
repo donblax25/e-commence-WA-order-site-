@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background-image: radial-gradient(circle at top right, rgba(181, 110, 45, 0.15), transparent 36%);
+}
+
+:root {
+  --bg-sand: #fbf7f2;
+  --ink: #1f2937;
+  --clay: #d6c5b4;
+  --olive: #56713a;
+  --amber: #d97706;
+  --card-shadow: 0 6px 18px rgba(31,41,55,0.06);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@layer base {
+  h1 { font-size: 1.875rem; line-height: 1.1; font-weight: 700; }
+  h2 { font-size: 1.25rem; font-weight: 600; }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg bg-white p-4 shadow-sm;
+    box-shadow: var(--card-shadow);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink text-white hover:opacity-95;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent border border-clay text-ink;
+  }
+
+  .toast-enter {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .toast-exit {
+    animation: slideOutRight 0.3s ease-in forwards;
+  }
+}
+
