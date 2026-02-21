@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { env } from "./config.js";
 import { publicRouter } from "./routes/public.js";
 import { adminRouter } from "./routes/admin.js";
+import { customerRouter } from "./routes/customers.js";
 import { errorHandler } from "./middleware/error.js";
 
 const app = express();
@@ -20,6 +21,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", publicRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/customers", customerRouter);
 
 app.use(errorHandler);
 

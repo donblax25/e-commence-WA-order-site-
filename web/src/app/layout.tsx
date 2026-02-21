@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="text-xl font-semibold">WA Commerce</Link>
             <nav className="flex items-center gap-4">
               <Link href="/cart">Cart</Link>
+              <Link href="/auth">Login</Link>
               <Link href="/admin">Admin</Link>
             </nav>
           </div>

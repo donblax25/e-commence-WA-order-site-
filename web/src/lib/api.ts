@@ -71,3 +71,29 @@ export async function createOrder(payload: {
 export function formatNgn(naira?: number | null) {
   return `NGN ${(naira ?? 0).toFixed(2)}`;
 }
+
+export async function customerSignup(payload: { email: string; password: string; name?: string }) {
+  const res = await fetch(`${base}/api/customers/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? "Signup failed");
+  }
+  return (await res.json()) as { token: string; customer: { id: string; email: string; name?: string } };
+}
+
+export async function customerLogin(payload: { email: string; password: string }) {
+  const res = await fetch(`${base}/api/customers/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? "Login failed");
+  }
+  return (await res.json()) as { token: string; customer: { id: string; email: string; name?: string } };
+}
