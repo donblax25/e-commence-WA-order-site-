@@ -14,8 +14,8 @@ export function ProductGrid({ products, categories }: { products: Product[]; cat
   const filtered = useMemo(() => {
     let items = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
     if (category) items = items.filter((p) => p.categorySlug === category);
-    if (sort === "price_asc") items = [...items].sort((a, b) => a.priceKobo - b.priceKobo);
-    if (sort === "price_desc") items = [...items].sort((a, b) => b.priceKobo - a.priceKobo);
+    if (sort === "price_asc") items = [...items].sort((a, b) => a.priceNaira - b.priceNaira);
+    if (sort === "price_desc") items = [...items].sort((a, b) => b.priceNaira - a.priceNaira);
     return items;
   }, [products, search, category, sort]);
 
